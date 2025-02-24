@@ -1,0 +1,24 @@
+{
+  "name": "databaser",
+  "version": "1.0.0",
+  "description": "Databaser - Inlämningsuppgift",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/goddessLeona/databaser.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/goddessLeona/databaser/issues"
+  },
+  "homepage": "https://github.com/goddessLeona/databaser#readme",
+  "dependencies": {
+    "better-sqlite3": "^11.8.1",
+    "express": "^4.21.2"
+  }
+}
