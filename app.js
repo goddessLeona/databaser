@@ -188,26 +188,23 @@ app.put(`/product/update/:id`,(req,res)=>{
 //ska även ta bort alla produktens recensioner (CASCADE DELATE)
 
 
-app.delete(`/products/delete/:id`, (req,res)=>{
-    try{
-        const {id}= req.params;
+app.delete(`/products/delete/:id`, (req, res) => {
+  try {
+    const { id } = req.params;
 
-        const stmt = req.db.prepare(`DELETE FROM Products WHERE id = ?`);
-        const resultat = stmt.run(id)
+    const stmt = req.db.prepare(`DELETE FROM Products WHERE id = ?`);
+    const resultat = stmt.run(id);
 
-        if (resultat.changes > 0) {
-          return res.json({message: "Product and comment deleted successfully",});
-        } else {
-          return res.status(404).json({ message: "Product not found" });
-        }
-         
-
-    }catch(error){
-        console.error(`somthing went wrong`, error.message);
-        res.status(500).json({ message: "Internal Server Error" });
+    if (resultat.changes > 0) {
+      return res.json({ message: "Product and comment deleted successfully" });
+    } else {
+      return res.status(404).json({ message: "Product not found" });
     }
-
-})
+  } catch (error) {
+    console.error(`somthing went wrong`, error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
 
 //----------------------------------------------------------Databas Relationer
 
@@ -398,6 +395,8 @@ Lämpliga HTTP-statuskoder(200,201,400, 404, etc.)
 //Uppgift 5 uppdaterad till VG
 
 // to add a product you have to fill in all the fieled (name,price,stocks,product_brand,product_type)
+// also if you forget to write in somthing (null) you get a error message
+// also where it is requered to write in a nr if you write in any thing else you get the error message
 // Productpristet måste vara större än 0
 // 201 = The request succeeded, and a new resource was created as a result.
 // 400 = The server cannot or will not process the request due to be a CLIENT ERROR
@@ -406,10 +405,16 @@ Lämpliga HTTP-statuskoder(200,201,400, 404, etc.)
 app.post(`/products/vg/products`, (req, res) => {
   try {
     const { Name, Price, Stocks, Product_brand, Product_type } = req.body;
-
-    if (!Name || !Price || !Stocks || !Product_brand || !Product_type) {
-        return res.status(400).json({ message: `All fields are required` });
-        }
+ 
+    if (
+      !Name ||
+      isNaN(Price) || Price === null || Price === "" ||
+      isNaN(Stocks) || Stocks === null || Stocks === "" ||
+      isNaN(Product_brand) ||Product_brand === null || Product_brand === "" ||
+      isNaN(Product_type) || Product_type === null || Product_type === ""
+    ) {
+      return res.status(400).json({ message: `All fields are required, price,stocks, product_brand & Product_type have to be a nr` });
+    }
 
     if (Price <= 0){
         return res.status(400).json({message: `Price have to be more than 0`})
@@ -532,17 +537,29 @@ app.put(`/customers/vg/:id`, (req, res) => {
 
 
 //------------------------------------------------------------------uppgift 2 VG
+// Extra funktionalitet
 
 //Valde alternativ 2
 //Sorteringa av produktlistan
 // lägg till query parameter för sortering
 //t.ex /products? sort=price_asc eller /products?sort=name_desc
-// la till ASC då tar vi de lägsta priset högst upp
-// om jag använt DESC hade det blivit det högsta priset först
 
-app.get(`/vg/products`, (req, res) => {
-  try {
-    const stmt = req.db.prepare(`SELECT 
+// postman: localhost:3000/sort/vg?sort=products&order=asc eller desc
+// postman: localhost:3000/sort/vg?sort=price&order=asc eller desc
+
+app.get(`/sort/vg`, (req,res)=>{
+  try{
+
+    const {sort, order} = req.query;
+
+    const validOrder = ["asc", "desc"];
+    const validSort = ['Price', 'products']
+
+    const sortBy = validSort.includes(sort)? sort: `Price`;
+    const orderBY = validOrder.includes(order) ? order: `asc`;
+
+    const query = `SELECT 
+    Products.id AS id,
     Products.Name AS products, 
     Products.Price,
     Product_brands.Name AS brand,
@@ -550,12 +567,14 @@ app.get(`/vg/products`, (req, res) => {
     FROM Products
     LEFT JOIN Product_brands ON products.Product_brand = Product_brands.id
     LEFT JOIN product_types ON products.Product_type = Product_types.id
-    ORDER BY products.price ASC`);
+    ORDER BY LOWER (${sortBy}) ${orderBY}`;
 
-    const products = stmt.all();
-    res.json(products);
+  
+  const stmt = req.db.prepare(query);
+  const products = stmt.all();
+  res.json(products);
 
-  } catch (error) {
-    console.error(`somthing whent wrong`, error.message);
+  }catch (error){
+    console.error(`Somthing whent wrong`, error.message);
   }
-});
+})
